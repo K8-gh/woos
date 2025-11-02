@@ -1,0 +1,1450 @@
+<!doctype html>
+<html lang="ru">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Web Office OS 2.2.14</title>
+    <style>
+        /* --------------------------------- */
+        /* 1. ПАЛИТРА И СТИЛЬ (Web Office / Windows 10 Hybrid) */
+        /* --------------------------------- */
+        :root {
+            --win-bg: #E4EBF5; /* Фон рабочего стола */
+            --win-accent: #0078D4; /* Основной синий акцент */
+            --win-panel: #F3F3F3; /* Фон окон, меню (светлый) */
+            --win-dark: #333333; /* Текст и иконки */
+            --win-light-text: #333333; /* Явный черный текст на светлом фоне */
+            --win-border: #CCCCCC; /* Цвет границы */
+            --win-shadow: 0 5px 15px rgba(0, 0, 0, 0.1); /* Мягкая тень */
+            --win-glass: rgba(255, 255, 255, 0.9); /* Акрил (почти непрозрачный) */
+            --win-hover: rgba(0, 0, 0, 0.08);
+
+            --bg: var(--win-bg);--panel: var(--win-panel);--glass: var(--win-glass);--accent: var(--win-accent);
+        }
+
+        /* ТЕМНАЯ ТЕМА */
+        [data-theme="dark"] {
+            --win-bg: #1F1F1F;
+            --win-panel: #2B2B2B;
+            --win-dark: #EFEFEF; /* Светлый основной текст */
+            --win-light-text: #EFEFEF; /* Светлый текст в меню */
+            --win-border: #444444;
+            --win-accent: #3A96DD;
+            --win-glass: rgba(43, 43, 43, 0.9);
+            --win-hover: rgba(255, 255, 255, 0.1);
+        }
+        /* НЕОНОВАЯ ТЕМА */
+        [data-theme="neon"] {
+            --win-accent: #ff2d95;
+            --win-bg: #04030a;
+            --win-panel: #0a0e14;
+            --win-dark: #cbd5e1;
+            --win-light-text: #cbd5e1;
+            --win-border: #222233;
+            --win-glass: rgba(10, 14, 20, 0.9);
+            --win-hover: rgba(255, 45, 149, 0.15);
+        }
+        /* --------------------------------- */
+
+        * { box-sizing: border-box; }
+        html, body {
+            height: 100%; margin: 0; font-family: 'Segoe UI', 'Roboto', sans-serif;
+            background: var(--bg); color: var(--win-dark); transition: background-color 0.3s, color 0.3s;
+        }
+        body { overflow: hidden; }
+
+        /* Desktop & Icons */
+        #desktop {
+            position: relative;
+            width: 100%;
+            height: calc(100vh - 40px);
+            overflow: hidden;
+            background-size: cover;
+            background-position: center;
+            transition: background-image 0.5s;
+        }
+        .icon {
+            width: 92px; text-align: center; font-size: 13px;
+            color: var(--win-dark);
+            cursor: pointer; position: absolute; padding: 8px 4px; border-radius: 4px; transition: background 0.1s;
+        }
+        .icon:hover { background: var(--win-hover); }
+        .icon div:first-child { font-size: 40px; margin-bottom: 4px; }
+
+        /* Taskbar (Windows 10 Style) */
+        #taskbar {
+            position: fixed; left: 0; bottom: 0; width: 100%; height: 40px;
+            background: var(--win-glass); border-top: 1px solid var(--win-border);
+            display: flex; align-items: center; padding: 0 4px; box-shadow: var(--win-shadow);
+            z-index: 60; backdrop-filter: blur(8px);
+        }
+        #startBtn {
+            width: 40px; height: 40px; border-radius: 0;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+            transition: background-color 0.15s;
+        }
+        #startBtn:hover { background: var(--win-hover); }
+        #startBtn.active { background: var(--win-accent); color: white; }
+        #startBtn .logo { font-size: 20px; font-weight: bold; }
+
+        /* Taskbar Items */
+        #taskItems { display: flex; gap: 2px; align-items: center; margin-left: 5px;}
+        .taskItem { padding: 4px 10px; height: 32px; border-radius: 2px; background: transparent; cursor: pointer; color: var(--win-dark); transition: background 0.15s; display: flex; align-items: center;}
+        .taskItem.active { background: var(--win-accent); color: white; }
+
+        /* Start Menu (Windows 10 Style) */
+        #startMenu {
+            position: fixed; left: 0; bottom: 40px;
+            background: var(--win-panel); width: 400px;
+            height: 500px;
+            padding: 10px 0;
+            box-shadow: var(--win-shadow);
+            border: 1px solid var(--win-border);
+            display: none;
+            z-index: 9999;
+            backdrop-filter: blur(6px);
+            display: flex; flex-direction: column;
+        }
+        .appList { padding: 10px; display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; overflow-y: auto; flex: 1; }
+        .appCard {
+            background: var(--win-hover); padding: 10px; border-radius: 4px; text-align: left;
+            cursor: pointer; transition: background 0.12s; display: flex; align-items: center; justify-content: space-between;
+            color: var(--win-light-text);
+        }
+        .appCard:hover { background: var(--win-accent); color: white; }
+        .appCard div:first-child { font-size: 20px; margin-right: 8px; }
+        .appCard button { color: var(--win-dark) !important; }
+        .appCard:hover button { color: white !important; }
+
+        /* Window (Back to simple) */
+        .window {
+            position: absolute; background: var(--win-panel); border-radius: 0;
+            border: 1px solid var(--win-border); box-shadow: var(--win-shadow);
+            overflow: hidden; display: flex; flex-direction: column;
+            z-index: 100; min-width: 200px; min-height: 100px;
+        }
+        .titlebar {
+            height: 30px; display: flex; align-items: center; padding: 0 8px;
+            gap: 8px; background: var(--win-panel); border-bottom: 1px solid var(--win-border);
+            cursor: grab; flex-shrink: 0;
+        }
+        .controls { margin-left: auto; display: flex; }
+
+        .controls .btn {
+            height: 30px; width: 40px; font-size: 14px;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer;
+        }
+        .controls .btn:hover { background: var(--win-hover); }
+        .controls .btn[data-act="close"]:hover {
+            background: #E81123;
+            color: white;
+        }
+
+        .content {
+            padding: 10px; flex: 1; overflow: auto;
+            background: var(--win-panel);
+            display: flex; flex-direction: column;
+            color: var(--win-dark);
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        /* Other elements */
+        button, select, input, textarea {
+            padding: 6px 10px; border-radius: 2px; border: 1px solid var(--win-border);
+            background: white;
+            color: black;
+            transition: border-color 0.15s;
+        }
+
+        [data-theme="dark"] button:not(.accent-btn),
+        [data-theme="dark"] select,
+        [data-theme="dark"] input:not([type="color"]),
+        [data-theme="dark"] textarea {
+             background: #3a3a3a;
+             border-color: #555555;
+             color: var(--win-dark);
+        }
+
+
+        #editorArea {
+             color: #000000 !important; /* ЧЕРНЫЙ ТЕКСТ */
+             background: #FFFFFF !important; /* БЕЛЫЙ ФОН ПОЛЯ */
+        }
+        /* КОНЕЦ ГАРАНТИИ */
+
+
+        .accent-btn { background: var(--win-accent) !important; color: white !important; border-color: var(--win-accent) !important; font-weight: 600; }
+        .accent-btn:hover { background: #0063B1 !important; }
+        #desktopClock {
+            position: relative; top: 0; right: 0; color: var(--win-dark); font-weight: 600; z-index: 50;
+        }
+
+        /* Стили для Калькулятора (для чистоты) */
+        .calc-btn {
+            padding: 15px 5px; font-size: 1.2em; border: none; border-radius: 0; cursor: pointer;
+            background: #E0E0E0; color: black; transition: background 0.1s;
+        }
+        .calc-btn:hover { background: #D0D0D0; }
+        .calc-btn[data-type="operator"], .calc-btn[data-val="="] { background: #FF9800; color: white; }
+        .calc-btn[data-val="="]:hover { background: #E68900; }
+        .calc-btn[data-val="C"], .calc-btn[data-val="<-"] { background: #FFCCBC; color: black; }
+
+        /* Стиль для змейки */
+        #gameInfo {
+            display: flex; justify-content: space-between; padding: 5px 10px; background: var(--win-hover); border-radius: 4px; margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <div id="desktop"></div>
+
+    <div id="startMenu" role="menu" style="display: none;">
+        <div style="padding: 0 10px 10px; border-bottom: 1px solid var(--win-border); display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;">
+            <h3 style="margin:0; color: var(--win-dark);">Приложения</h3>
+        </div>
+        <div class="appList" id="appGrid"></div>
+    </div>
+
+    <div id="taskbar">
+        <div id="startBtn" title="Пуск">
+            <span class="logo">❖</span>
+        </div>
+        <div id="taskItems"></div>
+        <div style="flex: 1;"></div>
+        <div id="tray" style="display:flex;gap:8px;align-items:center; padding-right: 10px;">
+            <div id="desktopClock"></div>
+        </div>
+    </div>
+
+    <input id="fileLoader" type="file" style="display:none" />
+    <input id="musicLoader" type="file" accept="audio/*" style="display:none" />
+    <input id="bgLoader" type="file" accept="image/*" style="display:none" />
+
+    <script>
+    /* ---------------------------------
+        2. JS: АРХИТЕКТУРА И МЕНЕДЖМЕНТ (Local Storage File System)
+        --------------------------------- */
+
+    const $ = sel => document.querySelector(sel);
+    const desktop = $('#desktop');
+    const startMenu = $('#startMenu');
+    const startBtn = $('#startBtn');
+    const appGrid = $('#appGrid');
+    const taskItems = $('#taskItems');
+    const OS_VERSION = 'WebOfficeOS_2_2_14'; // Версия 2.2.14
+
+    let z = 100;
+
+    // --- LocalStorage File System Helpers (Unchanged) ---
+    const LS_KEY = OS_VERSION + '_FS';
+    const LS_THEMES = OS_VERSION + '_THEMES';
+    const LS_APPS = OS_VERSION + '_APPS';
+
+    function loadFS() {
+        try { return JSON.parse(localStorage.getItem(LS_KEY) || '{}'); }
+        catch (e) { console.error("Error loading FS from LS", e); return {}; }
+    }
+
+    function saveFS(fs) { localStorage.setItem(LS_KEY, JSON.stringify(fs)); }
+
+    function putItem(item) {
+        const fs = loadFS();
+        if (!item || !item.id) return null;
+        if (item.id in fs) {
+            fs[item.id] = { ...fs[item.id], ...item };
+        } else {
+            // Устанавливаем mime по умолчанию, если не указан
+            if (!item.mime && item.type === 'file') {
+                 item.mime = item.name.endsWith('.txt') ? 'text/plain' : (item.name.endsWith('.png') || item.name.endsWith('.jpg') ? 'image/png' : 'application/octet-stream');
+            }
+            fs[item.id] = item;
+        }
+        saveFS(fs);
+        return fs[item.id];
+    }
+    function getItem(id) { const fs = loadFS(); return fs[id]; }
+    function listChildren(parent) { const fs = loadFS(); return Object.values(fs).filter(item => item.parent === parent); }
+
+    function deleteItem(id) {
+        if (!id || id === 'root' || id === 'docs' || id === 'pics') return false;
+        const fs = loadFS();
+        delete fs[id];
+        Object.keys(fs).forEach(key => {
+            if (fs[key].parent === id) delete fs[key];
+        });
+        saveFS(fs);
+        renderDesktop();
+        return true;
+    }
+    // ------------------------------------
+
+    // --- APP MANAGEMENT (Unchanged) ---
+
+    let BUILT_IN_APPS = [
+        {id:'files',name:'Проводник',icon:'📁',fn:openFiles},
+        {id:'viewer', name:'Просмотр Изображений', icon:'🏞️', fn: openImageViewer, isSystem: true},
+        {id:'editor',name:'Текст',icon:'📝',fn:()=>openTextEditor()},
+        {id:'paint',name:'Paint',icon:'🎨',fn:openPaint},
+        {id:'browser',name:'Браузер',icon:'🌐',fn:openBrowser},
+        {id:'music',name:'Музыка',icon:'🎵',fn:openMusic},
+        {id:'calendar',name:'Календарь',icon:'📅',fn:openCalendar},
+        {id:'settings',name:'Настройки',icon:'⚙️',fn:openSettings},
+        {id:'calc',name:'Калькулятор',icon:'🧮',fn:openCalculator},
+        {id:'table',name:'Таблицы',icon:'📊',fn:openSpreadsheet},
+        {id:'about',name:'О системе',icon:'💡',fn:openAbout},
+        {id:'addApp',name:'+ Приложение',icon:'➕',fn:openAppCreator, isSystem: true}
+    ];
+
+    function loadDynamicApps() {
+        try { return JSON.parse(localStorage.getItem(LS_APPS) || '[]'); }
+        catch (e) { return []; }
+    }
+
+    function saveDynamicApps(apps) {
+        localStorage.setItem(LS_APPS, JSON.stringify(apps));
+    }
+
+    function addApp(name, icon, htmlContent, jsCode, id=null){
+        const dynamicApps = loadDynamicApps();
+        const newAppId = id || 'app_'+Date.now();
+        const existingIndex = dynamicApps.findIndex(app => app.id === newAppId);
+
+        const newApp = {
+            id: newAppId,
+            name, icon,
+            isDynamic: true,
+            html: htmlContent,
+            js: jsCode
+        };
+
+        if(existingIndex > -1) {
+            dynamicApps[existingIndex] = newApp; // Обновляем
+        } else {
+            dynamicApps.push(newApp); // Добавляем
+        }
+
+        saveDynamicApps(dynamicApps);
+        renderStartMenu();
+    }
+
+    function deleteApp(id) {
+        let dynamicApps = loadDynamicApps();
+        dynamicApps = dynamicApps.filter(app => app.id !== id);
+        saveDynamicApps(dynamicApps);
+        renderStartMenu();
+    }
+
+    function getAppList() {
+        const dynamicApps = loadDynamicApps().map(app => ({
+            ...app,
+            fn: () => {
+                // Определение размеров окна для динамических приложений
+                let w = 600;
+                let h = 400;
+
+                // --- АВТОМАТИЧЕСКИЙ РАЗМЕР ДЛЯ ЗМЕЙКИ ---
+                if(app.name.toLowerCase().includes('змейка') || app.id === 'snake_game') {
+                    w = 420;
+                    h = 500;
+                }
+                // --------------------------------------------------------
+
+                const {win, content} = createWindow(app.name, w, h);
+
+                content.innerHTML = app.html;
+                try {
+                    // Используем функцию new Function для изоляции кода приложения
+                    const func = new Function('content', 'createWindow', 'window', 'document', 'win', app.js);
+                    func.call(content, content, createWindow, window, document, win);
+                } catch (e) {
+                    alert('Ошибка выполнения скрипта: ' + e.message);
+                }
+            }
+        }));
+        return BUILT_IN_APPS.concat(dynamicApps);
+    }
+
+    // --- Initialization and Rendering (Snake App Code Unchanged) ---
+
+    const SNAKE_HTML = `
+        <div id="gameInfo">
+            <span>Счет: <span id="score">0</span></span>
+            <button id="startGameBtn" class="accent-btn" style="padding: 4px 8px;">Старт</button>
+        </div>
+        <canvas id="snakeCanvas" width="400" height="400" style="border: 1px solid #000; display: block; margin: 0 auto; background: #C8E6C9;"></canvas>
+        <p style="text-align: center; margin-top: 5px;">Используйте стрелки (↑↓←→) для управления.</p>
+    `;
+
+    const SNAKE_JS = `
+        const canvas = content.querySelector('#snakeCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = content.querySelector('#score');
+        const startButton = content.querySelector('#startGameBtn');
+
+        const TILE_SIZE = 20;
+        const GRID_SIZE = canvas.width / TILE_SIZE;
+
+        let snake = [{x: 10, y: 10}];
+        let food = {};
+        let dx = TILE_SIZE;
+        let dy = 0;
+        let score = 0;
+        let gameLoopId;
+        let gameRunning = false;
+
+        // --- Game Logic ---
+
+        function drawTile(x, y, color) {
+            ctx.fillStyle = color;
+            ctx.fillRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            ctx.strokeStyle = '#eee';
+            ctx.strokeRect(x * TILE_SIZE, y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+        }
+
+        function generateFood() {
+            food.x = Math.floor(Math.random() * GRID_SIZE);
+            food.y = Math.floor(Math.random() * GRID_SIZE);
+            // Убедиться, что еда не на змейке
+            for (let part of snake) {
+                if (part.x === food.x && part.y === food.y) {
+                    generateFood();
+                    return;
+                }
+            }
+        }
+
+        function moveSnake() {
+            const head = {x: snake[0].x + dx / TILE_SIZE, y: snake[0].y + dy / TILE_SIZE};
+
+            // Проверка столкновения со стенами
+            if (head.x < 0 || head.x >= GRID_SIZE || head.y < 0 || head.y >= GRID_SIZE) {
+                gameOver();
+                return;
+            }
+
+            // Проверка столкновения с собой
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) {
+                    gameOver();
+                    return;
+                }
+            }
+
+            snake.unshift(head);
+
+            // Еда?
+            if (head.x === food.x && head.y === food.y) {
+                score++;
+                scoreElement.textContent = score;
+                generateFood();
+            } else {
+                snake.pop(); // Удалить хвост
+            }
+        }
+
+        function drawGame() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = '#C8E6C9';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Змейка
+            snake.forEach((part, index) => {
+                drawTile(part.x, part.y, index === 0 ? '#1A4314' : '#4CAF50'); // Темная голова
+            });
+
+            // Еда
+            drawTile(food.x, food.y, '#FF5252');
+        }
+
+        function mainLoop() {
+            if (!gameRunning) return;
+
+            moveSnake();
+            drawGame();
+
+            // Скорость игры зависит от длины змейки
+            let speed = 100 - (score * 5);
+            speed = Math.max(speed, 50); // Минимальная скорость
+
+            gameLoopId = setTimeout(mainLoop, speed);
+        }
+
+        function gameOver() {
+            gameRunning = false;
+            clearTimeout(gameLoopId);
+            ctx.font = "30px Arial";
+            ctx.fillStyle = "red";
+            ctx.textAlign = "center";
+            ctx.fillText("Игра Окончена!", canvas.width / 2, canvas.height / 2);
+            ctx.font = "16px Arial";
+            ctx.fillStyle = "black";
+            ctx.fillText("Финальный счет: " + score, canvas.width / 2, canvas.height / 2 + 30);
+            startButton.textContent = 'Начать Снова';
+            startButton.disabled = false;
+        }
+
+        function startGame() {
+            if (gameRunning) return;
+
+            snake = [{x: 10, y: 10}];
+            dx = TILE_SIZE;
+            dy = 0;
+            score = 0;
+            scoreElement.textContent = score;
+            gameRunning = true;
+            startButton.textContent = 'В Игре...';
+            startButton.disabled = true;
+
+            generateFood();
+            mainLoop();
+        }
+
+        // --- Event Listeners ---
+
+        const handleKeyDown = (e) => {
+            // NOTE: win доступен из-за передачи в new Function
+            const allWindows = Array.from(document.querySelectorAll('.window'));
+            const maxZIndex = Math.max(...allWindows.map(w => parseInt(w.style.zIndex) || 0));
+            if (!gameRunning || win.style.zIndex !== String(maxZIndex)) return;
+
+            const goingUp = dy === -TILE_SIZE;
+            const goingDown = dy === TILE_SIZE;
+            const goingRight = dx === TILE_SIZE;
+            const goingLeft = dx === -TILE_SIZE;
+
+            if (e.key === 'ArrowLeft' && !goingRight) {
+                dx = -TILE_SIZE; dy = 0;
+            } else if (e.key === 'ArrowUp' && !goingDown) {
+                dx = 0; dy = -TILE_SIZE;
+            } else if (e.key === 'ArrowRight' && !goingLeft) {
+                dx = TILE_SIZE; dy = 0;
+            } else if (e.key === 'ArrowDown' && !goingUp) {
+                dx = 0; dy = TILE_SIZE;
+            }
+        };
+
+        document.addEventListener('keydown', handleKeyDown);
+        startButton.addEventListener('click', startGame);
+
+        // Очистка при закрытии окна
+        win.addEventListener('remove', () => {
+            document.removeEventListener('keydown', handleKeyDown);
+            clearTimeout(gameLoopId);
+        });
+
+        // Инициализация при открытии
+        ctx.font = "30px Arial";
+        ctx.fillStyle = "gray";
+        ctx.textAlign = "center";
+        ctx.fillText("Нажмите СТАРТ", canvas.width / 2, canvas.height / 2);
+    `;
+
+    function ensureDemo() {
+        const fs = loadFS();
+        if (Object.keys(fs).length < 5) {
+            const initialFiles = [
+                { id: 'root', name: '/', type: 'folder', parent: null },
+                { id: 'docs', name: 'Documents', type: 'folder', parent: 'root' },
+                { id: 'pics', name: 'Pictures', type: 'folder', parent: 'root' },
+                { id: 'welcome', name: 'Welcome.txt', type: 'file', parent: 'docs', content: 'Web Office OS 2.2.14: Добавлено приложение "Змейка" в меню Пуск!', mime: 'text/plain' }
+            ];
+            initialFiles.forEach(putItem);
+        }
+
+        // --- АВТОМАТИЧЕСКОЕ СОЗДАНИЕ ПРИЛОЖЕНИЯ "ЗМЕЙКА" ---
+        const existingApps = loadDynamicApps();
+        const snakeExists = existingApps.some(app => app.id === 'snake_game');
+
+        if (!snakeExists) {
+            addApp('Змейка', '🐍', SNAKE_HTML, SNAKE_JS, 'snake_game');
+        }
+        // ----------------------------------------------------
+
+        renderDesktop();
+        renderStartMenu();
+        applySettings();
+    }
+
+    // --- Window Manager (ИСХОДНАЯ ВЕРСИЯ - ПЕРЕТАСКИВАНИЕ ТОЛЬКО ЗАГОЛОВКА) ---
+    function createWindow(title,w=700,h=480,left=120,top=80){
+        const win=document.createElement('div');
+        win.className='window';
+        win.style.width=w+'px';
+        win.style.height=h+'px';
+        win.style.left=left+'px';
+        win.style.top=top+'px';
+        win.style.zIndex=++z;
+        win.dataset.title=title;
+        win.innerHTML=`<div class='titlebar'><div class='title' style='flex: 1;'>${title}</div><div class='controls'><div class='btn' data-act='min'>—</div><div class='btn' data-act='max'>&#9723;</div><div class='btn' data-act='close'>✕</div></div></div><div class='content'></div>`;
+        document.body.appendChild(win);
+
+        const titlebar=win.querySelector('.titlebar');
+        const content=win.querySelector('.content');
+
+        win.addEventListener('mousedown', ()=>{win.style.zIndex=++z});
+
+        // ----------------------------------------------------------------
+        // ЛОГИКА DRAGGING (СТАРАЯ - ТОЛЬКО ЗАГОЛОВОК)
+        // ----------------------------------------------------------------
+        let drag=false, dx=0, dy=0;
+        titlebar.addEventListener('mousedown', (e) => {
+            // Проверяем, не нажал ли пользователь на кнопки управления
+            if (e.target.closest('.controls')) return;
+
+            drag = true;
+            dx = e.clientX - win.offsetLeft;
+            dy = e.clientY - win.offsetTop;
+            win.style.zIndex = ++z;
+            e.preventDefault(); // Предотвращаем выделение текста
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!drag) return;
+
+            // Если окно максимизировано, не двигаем его
+            if(win.dataset.max === '1') return;
+
+            win.style.left = (e.clientX - dx) + 'px';
+            win.style.top = (e.clientY - dy) + 'px';
+        });
+
+        window.addEventListener('mouseup', () => {
+            drag = false;
+        });
+        // ----------------------------------------------------------------
+
+        const controls = win.querySelector('.controls');
+
+        controls.addEventListener('click', (e) => {
+            const btn = e.target.closest('.btn');
+            if (!btn) return;
+
+            const action = btn.dataset.act;
+
+            if (action === 'close') {
+                if(win._task) win._task.remove();
+                // Вызываем специальное событие, чтобы динамические приложения могли очистить слушатели
+                const removeEvent = new CustomEvent('remove', { bubbles: true });
+                win.dispatchEvent(removeEvent);
+
+                win.remove();
+            }
+            else if (action === 'min') {
+                win.style.display='none';
+                if(win._task) win._task.classList.remove('active');
+            }
+            else if (action === 'max') {
+                if(win.dataset.max==='1'){
+                    // Restore
+                    win.style.width=win.dataset.w;win.style.height=win.dataset.h;
+                    win.style.left=win.dataset.l;win.style.top=win.dataset.t;
+                    win.dataset.max='0';
+                }else{
+                    // Maximize
+                    win.dataset.w=win.style.width;win.dataset.h=win.style.height;
+                    win.dataset.l=win.style.left;win.dataset.t=win.style.top;
+
+                    win.style.left='0';win.style.top='0';
+                    win.style.width=window.innerWidth+'px';
+                    win.style.height=(window.innerHeight-40)+'px';
+                    win.dataset.max='1';
+                }
+            }
+        });
+
+        titlebar.addEventListener('dblclick', (e) => {
+            if (!e.target.closest('.controls')) {
+                const maxBtn = win.querySelector('[data-act="max"]');
+                if (maxBtn) maxBtn.click();
+            }
+        });
+
+        addTask(win, title);
+
+        return {win,content};
+    }
+
+    function addTask(win,title){
+        const el=document.createElement('div');
+        el.className='taskItem active';
+        el.textContent=title.length > 15 ? title.substring(0, 12) + '...' : title;
+        el.onclick=()=>{
+            if(win.style.display==='none'){
+                win.style.display='flex';
+                el.classList.add('active');
+                win.style.zIndex=++z;
+            }
+            else if(win.style.zIndex === z){
+                win.style.display='none';
+                el.classList.remove('active');
+            }
+            else {
+                win.style.zIndex=++z;
+                el.classList.add('active');
+            }
+        };
+        taskItems.appendChild(el);
+        win._task=el;
+    }
+
+    function renderStartMenu(){
+        appGrid.innerHTML='';
+        const appList = getAppList();
+        const sortedApps = [...appList].sort((a, b) => a.name.localeCompare(b.name));
+
+        sortedApps.forEach(a=>{
+            const card=document.createElement('div');
+            card.className='appCard';
+
+            const infoDiv = document.createElement('div');
+            infoDiv.style.display = 'flex';
+            infoDiv.style.alignItems = 'center';
+            infoDiv.innerHTML = `<div>${a.icon}</div><div>${a.name}</div>`;
+            infoDiv.onclick=()=>{startMenu.style.display='none';startBtn.classList.remove('active');a.fn()};
+
+            card.appendChild(infoDiv);
+
+            if (a.isDynamic && !a.isSystem) {
+                const deleteBtn = document.createElement('button');
+                deleteBtn.textContent = '❌';
+                deleteBtn.title = 'Удалить приложение';
+                deleteBtn.style.cssText = 'padding: 4px; background: none; border: none; font-size: 16px; cursor: pointer;';
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Вы уверены, что хотите удалить приложение "${a.name}"?`)) {
+                        deleteApp(a.id);
+                    }
+                };
+                card.appendChild(deleteBtn);
+            }
+
+            appGrid.appendChild(card)
+        })
+    }
+
+    // --- Desktop Rendering and Icon Drag Logic (Unchanged) ---
+    function renderDesktop(path='root'){
+        desktop.innerHTML='';
+        const items=listChildren(path);
+        let i=0;
+        for(const it of items){
+            const el=document.createElement('div');
+            el.className='icon';
+            el.dataset.id=it.id;
+
+            let x = it.desktopX !== undefined ? it.desktopX : (20 + (i%6)*110);
+            let y = it.desktopY !== undefined ? it.desktopY : (20 + Math.floor(i/6)*120);
+
+            el.style.left=x+'px';
+            el.style.top=y+'px';
+
+            el.draggable=true;
+            // Обновляем иконку для изображений
+            const icon = it.type==='folder' ? '📁' : (it.mime && it.mime.startsWith('image/') ? '🖼️' : '📄');
+            el.innerHTML=`<div style='font-size:46px'>${icon}</div><div style='max-width:88px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap'>${it.name}</div>`;
+
+            el.addEventListener('dblclick',()=>{
+                if(it.type==='folder'){
+                    openFolderWindow(it.id,it.name)
+                } else {
+                    openFileByType(it.id); // Использование новой функции
+                }
+            });
+            desktop.appendChild(el);i++;
+
+            // Logic for dragging
+            let isDragging = false;
+            let offsetX, offsetY;
+
+            el.addEventListener('pointerdown', (e) => {
+                if (e.target.tagName.toLowerCase() === 'div' && e.target.closest('.icon')) {
+                    isDragging = true;
+                    e.preventDefault();
+                    el.setPointerCapture(e.pointerId);
+                    offsetX = e.clientX - el.offsetLeft;
+                    offsetY = e.clientY - el.offsetTop;
+                    el.style.zIndex = ++z;
+                }
+            });
+
+            el.addEventListener('pointermove', (e) => {
+                if (!isDragging) return;
+                let newX = e.clientX - offsetX;
+                let newY = e.clientY - offsetY;
+
+                const grid = 10;
+                newX = Math.round(newX / grid) * grid;
+                newY = Math.round(newY / grid) * grid;
+
+                el.style.left = newX + 'px';
+                el.style.top = newY + 'px';
+            });
+
+            el.addEventListener('pointerup', () => {
+                if (isDragging) {
+                    isDragging = false;
+                    const itemToSave = getItem(it.id);
+                    itemToSave.desktopX = el.offsetLeft;
+                    itemToSave.desktopY = el.offsetTop;
+                    putItem(itemToSave);
+                }
+            });
+        }
+    }
+
+    // --- Core File Handler (Unchanged) ---
+
+    function openFileByType(id) {
+        const item = getItem(id);
+        if (!item) return;
+
+        if (item.mime && item.mime.startsWith('text/')) {
+            openTextEditor(id);
+        } else if (item.mime && item.mime.startsWith('image/')) {
+            openImageViewer(id);
+        } else {
+            alert(`Нет приложения для открытия файла типа ${item.mime || 'неизвестно'}!`);
+        }
+    }
+
+    // --- Theme & Start Menu Logic (Unchanged) ---
+    const THEMES = ['light', 'dark', 'neon'];
+    const BACKGROUNDS = [
+        {name: 'Default Wave', type: 'color', value: 'var(--win-bg)'},
+        {name: 'Stars', type: 'url', value: 'https://images.unsplash.com/photo-1534796636680-302ac8594251?fit=crop&w=1280&h=720&q=80'},
+        {name: 'City Light', type: 'url', value: 'https://images.unsplash.com/photo-1549419137-b7654a8e239b?fit=crop&w=1280&h=720&q=80'},
+    ];
+
+    function saveSettings(key, value) {
+        localStorage.setItem(OS_VERSION + '_' + key, value);
+    }
+
+    function getSettings(key, defaultValue) {
+        return localStorage.getItem(OS_VERSION + '_' + key) || defaultValue;
+    }
+
+    function applySettings(){
+        const savedTheme = getSettings('theme', 'light');
+        document.body.dataset.theme = savedTheme;
+
+        const savedBgType = getSettings('bg_type', 'color');
+        const savedBgValue = getSettings('bg_value', 'var(--win-bg)');
+
+        if (savedBgType === 'color') {
+            desktop.style.backgroundImage = 'none';
+            desktop.style.backgroundColor = savedBgValue;
+        } else if (savedBgType === 'url') {
+            desktop.style.backgroundImage = `url('${savedBgValue}')`;
+            desktop.style.backgroundColor = 'var(--win-bg)';
+        } else if (savedBgType === 'data') {
+            desktop.style.backgroundImage = `url('${savedBgValue}')`;
+            desktop.style.backgroundColor = 'var(--win-bg)';
+        }
+    }
+
+    startBtn.onclick=()=>{
+        const isVisible = startMenu.style.display==='flex';
+        startMenu.style.display = isVisible ? 'none' : 'flex';
+        startBtn.classList.toggle('active', !isVisible);
+    };
+    window.addEventListener('click',e=>{if(!startMenu.contains(e.target) && e.target!==startBtn && !startBtn.contains(e.target)){startMenu.style.display='none'; startBtn.classList.remove('active')}})
+
+    // --- App Implementations (Unchanged) ---
+    // (openFiles, openFolderWindow, openImageViewer, openTextEditor, openPaint, openSettings, openBrowser, openMusic, openCalendar, openCalculator, openSpreadsheet, openAbout)
+
+    function openFiles(){openFolderWindow('root', 'Проводник');}
+    function openFolderWindow(id,name){
+        const {win,content}=createWindow(name,600,420,160,120);
+        content.innerHTML=`<div style='display:flex;gap:8px;margin-bottom:12px; flex-shrink: 0;'><button id='newFile' class='accent-btn'>Новый файл</button><button id='newFolder'>Новая папка</button></div><div id='list' style='flex: 1; overflow-y: auto;'></div>`;
+        const list=content.querySelector('#list');
+        function refresh(){
+            const items=listChildren(id);
+            list.innerHTML='';
+            if (id !== 'root') {
+                 const upRow = document.createElement('div');
+                 upRow.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding: 6px; border-bottom: 1px solid #CCC; font-style: italic; background: var(--win-hover); cursor: pointer;';
+                 upRow.innerHTML = `<div>⬆️ ..</div><button>Наверх</button>`;
+                 upRow.querySelector('button').onclick = () => {
+                     const currentItem = getItem(id);
+                     if (currentItem && currentItem.parent) {
+                         const parentItem = getItem(currentItem.parent);
+                         openFolderWindow(currentItem.parent, parentItem.name);
+                         win.remove();
+                     }
+                 };
+                 list.appendChild(upRow);
+            }
+            for(const it of items){
+                const icon = it.type==='folder' ? '📁' : (it.mime && it.mime.startsWith('image/') ? '🖼️' : '📄');
+                const row=document.createElement('div');
+                row.style.cssText = 'display:flex; justify-content:space-between; align-items:center; padding: 6px; border-bottom: 1px solid #EEE;';
+                row.innerHTML=`<div style='display:flex;gap:10px;align-items:center'><div>${icon}</div><div style='min-width:140px'>${it.name}</div></div><div><button data-open='${it.id}'>Открыть</button><button data-delete='${it.id}' style='margin-left: 5px; color: red;'>Удалить</button></div>`;
+                list.appendChild(row);
+            }
+            list.querySelectorAll('[data-open]').forEach(b=>b.onclick=()=>{
+                const it=getItem(b.getAttribute('data-open'));
+                if(it.type==='folder'){openFolderWindow(it.id,it.name); win.remove();}
+                else{openFileByType(it.id)} // Использование новой функции
+            });
+
+            list.querySelectorAll('[data-delete]').forEach(b=>b.onclick=()=>{
+                const deleteId = b.getAttribute('data-delete');
+                const item = getItem(deleteId);
+                if (confirm(`Вы уверены, что хотите удалить "${item.name}"?`)) {
+                    deleteItem(deleteId);
+                    refresh();
+                }
+            });
+        }
+        content.querySelector('#newFile').onclick=()=>{const name=prompt('Имя файла','untitled.txt');if(name){putItem({id:'f_'+Date.now(),name,type:'file',parent:id,content:'',mime:'text/plain'});refresh()}};
+        content.querySelector('#newFolder').onclick=()=>{const name=prompt('Имя папки','Новая папка');if(name){putItem({id:'d_'+Date.now(),name,type:'folder',parent:id});refresh()}};
+        refresh();
+    }
+
+    // 🏞️ Image Viewer
+    function openImageViewer(id = null) {
+        const item = getItem(id);
+        if (!item || !item.content || !item.mime.startsWith('image/')) {
+            const {win, content} = createWindow('Просмотр Изображений', 600, 400);
+            content.innerHTML = `<p style="text-align: center; margin-top: 50px;">В разработке...</p>`;
+            return;                                                                                               вителен
+        }
+
+        const {win, content} = createWindow(item.name, 700, 500, 180, 140);
+        content.style.padding = '0';
+        content.style.overflow = 'hidden';
+        content.innerHTML = `
+            <div style="flex: 1; display: flex; justify-content: center; align-items: center; background: #000;">
+                <img src="${item.content}" alt="${item.name}" style="max-width: 100%; max-height: 100%; object-fit: contain;">
+            </div>
+        `;
+    }
+
+    // 📝 Text Editor
+    function openTextEditor(id=null){
+        let initial='', name='';
+        const item = getItem(id);
+        if(item){initial=item.content||'';name=item.name||'file.txt'}
+        const {win,content}=createWindow(name||'Текстовый Редактор',760,520,140,90);
+
+        content.innerHTML=`
+            <div style='display:flex;gap:8px;margin-bottom:12px; flex-shrink: 0;'>
+                <input id='fname' placeholder='имя файла.txt' value='${name||''}' style='flex:1;'/>
+                <button id='saveBtn' class='accent-btn'>Сохранить</button>
+            </div>
+            <textarea id='editorArea' style='width:100%;flex:1;resize:none;border:1px solid var(--win-border);padding:10px;min-height: 350px;'>${initial}</textarea>
+        `;
+
+        content.querySelector('#saveBtn').onclick=()=>{
+            const n=content.querySelector('#fname').value||('untitled_'+Date.now()+'.txt');
+            const c=content.querySelector('#editorArea').value;
+            let mime = 'text/plain';
+            if (n.endsWith('.html') || n.endsWith('.htm')) mime = 'text/html';
+
+            if(id){
+                const it=getItem(id);
+                it.content=c;it.name=n; it.mime=mime;
+                putItem(it);
+            }else{
+                putItem({id:'f_'+Date.now(),name:n,type:'file',parent:'root',content:c,mime:mime});
+            }
+            win.querySelector('.title').textContent=n;
+            alert('Сохранено');
+            renderDesktop();
+        };
+    }
+
+    // 🎨 Paint
+    function openPaint(){
+        const {win, content}=createWindow('Paint',760,540,160,120);
+        content.style.padding = '0';
+        content.innerHTML=`
+            <div style='display:flex;gap:10px;padding:8px; flex-shrink: 0; align-items: center;'>
+                <label style='color: var(--win-dark);'>Цвет: <input type='color' id='colorPicker' value='#000000'/></label>
+                <label style='color: var(--win-dark);'>Размер: <input type='range' id='sizeRange' min='1' max='50' value='5'/></label>
+                <button id='clearBtn'>Очистить</button>
+                <button id='savePngBtn' class='accent-btn'>Сохранить на в папку Pictures</button>
+            </div>
+            <canvas id='paintCanvas' width='758' height='470' style='border:none;background:white; cursor: crosshair; flex-shrink: 1;'></canvas>
+        `;
+
+        const canvas = content.querySelector('#paintCanvas');
+        const ctx = canvas.getContext('2d');
+        const colorPicker = content.querySelector('#colorPicker');
+        const sizeRange = content.querySelector('#sizeRange');
+        content.querySelector('#clearBtn').onclick = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        content.querySelector('#savePngBtn').onclick = () => {
+             try {
+                const dataURL = canvas.toDataURL('image/png');
+                const name=prompt('Имя рисунка','drawing_'+Date.now()+'.png');
+                if(name){
+                    putItem({
+                        id:'img_'+Date.now(),
+                        name: name,
+                        type: 'file',
+                        parent: 'pics',
+                        content: dataURL,
+                        mime: 'image/png'
+                    });
+                    alert(`Рисунок "${name}" сохранен в папку Pictures!`);
+                    renderDesktop();
+                }
+             } catch (e) {
+                 alert('Ошибка сохранения: ' + e.message + ' (Возможно, ограничение браузера)');
+             }
+        };
+
+        let isDrawing = false;
+        canvas.addEventListener('mousedown', (e) => {
+            isDrawing = true;
+            ctx.beginPath();
+            ctx.moveTo(e.offsetX, e.offsetY);
+        });
+        canvas.addEventListener('mousemove', (e) => {
+            if (!isDrawing) return;
+            ctx.lineTo(e.offsetX, e.offsetY);
+            ctx.strokeStyle = colorPicker.value;
+            ctx.lineWidth = sizeRange.value;
+            ctx.lineCap = 'round';
+            ctx.stroke();
+        });
+        canvas.addEventListener('mouseup', () => { isDrawing = false; });
+        canvas.addEventListener('mouseout', () => { isDrawing = false; });
+    }
+
+    // ⚙️ Настройки
+    function openSettings(){
+        const {win, content}=createWindow('Настройки ОС', 550, 480, 200, 100);
+        content.innerHTML=`
+            <h3 style='border-bottom: 1px solid var(--win-border); padding-bottom: 5px;'>⚙️ Общие настройки</h3>
+            <div style='display: grid; grid-template-columns: 150px 1fr; gap: 15px;'>
+
+                <h4>🎨 Тема</h4>
+                <select id="themeSelect">
+                    ${THEMES.map(t => `<option value="${t}">${t.charAt(0).toUpperCase() + t.slice(1)}</option>`).join('')}
+                </select>
+
+                <h4>🖼️ Фон</h4>
+                <select id="bgSelect" style="flex: 1;">
+                    ${BACKGROUNDS.map((bg, i) => `<option value="${bg.type}:${bg.value}">${bg.name}</option>`).join('')}
+                </select>
+
+                <h4></h4>
+                <div>
+                    <button id="loadBgBtn">Загрузить свой фон</button>
+                    <button id="clearBgBtn" style="margin-left: 10px; color: red;">Сбросить фон</button>
+                </div>
+
+                <h4>🛠️ Файловая система</h4>
+                <button id="resetFS" style="background: #F44336; color: white;">Сбросить все данные ОС</button>
+
+                <h4 style="grid-column: span 2; border-bottom: 1px solid var(--win-border); margin-top: 15px;">Прочие настройки (заглушки)</h4>
+
+                <h4>Звуки</h4>
+                <input type="range" min="0" max="100" value="50">
+
+                <h4>Уведомления</h4>
+                <input type="checkbox" checked>
+
+            </div>
+        `;
+
+        const themeSelect = content.querySelector('#themeSelect');
+        const bgSelect = content.querySelector('#bgSelect');
+        const loadBgBtn = content.querySelector('#loadBgBtn');
+        const clearBgBtn = content.querySelector('#clearBgBtn');
+        const resetFSBtn = content.querySelector('#resetFS');
+        const bgLoader = $('#bgLoader');
+
+        themeSelect.value = getSettings('theme', 'light');
+        bgSelect.value = getSettings('bg_type', 'color') + ':' + getSettings('bg_value', 'var(--win-bg)');
+
+        themeSelect.onchange = (e) => {
+            const newTheme = e.target.value;
+            saveSettings('theme', newTheme);
+            applySettings();
+        };
+
+        bgSelect.onchange = (e) => {
+            const [type, value] = e.target.value.split(':');
+            saveSettings('bg_type', type);
+            saveSettings('bg_value', value);
+            applySettings();
+        };
+
+        loadBgBtn.onclick = () => bgLoader.click();
+        bgLoader.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const dataUrl = e.target.result;
+                    const name = 'Custom BG';
+
+                    saveSettings('bg_type', 'data');
+                    saveSettings('bg_value', dataUrl);
+                    applySettings();
+
+                    alert('Ваш фон загружен и применен!');
+
+                    const option = document.createElement('option');
+                    option.value = 'data:' + dataUrl;
+                    option.textContent = name;
+                    bgSelect.appendChild(option);
+                    bgSelect.value = 'data:' + dataUrl;
+                };
+                reader.readAsDataURL(file);
+            }
+            bgLoader.value = null;
+        };
+
+        clearBgBtn.onclick = () => {
+            saveSettings('bg_type', 'color');
+            saveSettings('bg_value', 'var(--win-bg)');
+            bgSelect.value = 'color:var(--win-bg)';
+            applySettings();
+        };
+
+        resetFSBtn.onclick = () => {
+            if (confirm('ВНИМАНИЕ! Вы уверены, что хотите сбросить ВСЮ файловую систему (файлы, папки, настройки)?')) {
+                localStorage.clear();
+                alert('Данные очищены. Перезагрузите страницу для применения.');
+                win.remove();
+            }
+        };
+    }
+
+    function openBrowser(){
+        const {content}=createWindow('Браузер',900,600,80,60);
+        content.style.padding = '0';
+        content.innerHTML=`<div style='display:flex;padding:8px; background: var(--win-panel); border-bottom: 1px solid var(--win-border); flex-shrink: 0;'><input id='url' placeholder='https://example.com' style='flex:1;' value='https://gemini.google.com/'/><button id='go' class='accent-btn'>Go</button></div><iframe id='iframe' style='width:100%;flex:1;border:none;background: white;'></iframe>`;
+        const url=content.querySelector('#url');
+        const iframe=content.querySelector('#iframe');
+        iframe.src=url.value;
+        content.querySelector('#go').onclick=()=>{let u=url.value.trim();if(!u) return; if(!/^https?:\/\//.test(u)) u='https://'+u;iframe.src=u};
+    }
+
+    function openMusic(){
+        const {content}=createWindow('Музыкальный Плеер',640,420,220,120);
+        content.innerHTML=`
+            <div style='display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; gap: 15px;'>
+                <audio id='audioPlayer' controls style='width:90%; flex-shrink: 0;'>
+                    Ваш браузер не поддерживает аудио элемент.
+                </audio>
+                <div id='currentTrackInfo' style='font-style: italic;'>Трек не загружен</div>
+                <button id='loadMusicBtn' class='accent-btn'>Загрузить Трек (MP3, WAV)</button>
+            </div>
+        `;
+
+        const audioPlayer = content.querySelector('#audioPlayer');
+        const trackInfo = content.querySelector('#currentTrackInfo');
+        const loadMusicBtn = content.querySelector('#loadMusicBtn');
+        const musicLoader = $('#musicLoader');
+
+        loadMusicBtn.onclick = () => musicLoader.click();
+
+        musicLoader.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const url = URL.createObjectURL(file);
+                audioPlayer.src = url;
+                trackInfo.textContent = `Загружено: ${file.name}`;
+                audioPlayer.play();
+            }
+            musicLoader.value = null;
+        };
+    }
+    function openCalendar(){
+        const {content}=createWindow('Календарь',400,460,260,180);
+        content.innerHTML=`<div id="calendarDisplay" style="text-align: center;"></div>`;
+
+        const today = new Date();
+        const year = today.getFullYear();
+        const month = today.getMonth();
+        const day = today.getDate();
+
+        function renderCalendar(m, y) {
+            const firstDayOfMonth = new Date(y, m, 1).getDay();
+            const daysInMonth = new Date(y, m + 1, 0).getDate();
+            const monthNames = ["Январь", "Февраль", "Март", "Апрель", "Май", "Июнь", "Июль", "Август", "Сентябрь", "Октябрь", "Ноябрь", "Декабрь"];
+            const weekDays = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"];
+
+            let html = `
+                <h3 style="color: var(--win-accent); margin-bottom: 5px;">${monthNames[m]} ${y}</h3>
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead><tr>${weekDays.map(d => `<th style="padding: 5px; color: #666;">${d}</th>`).join('')}</tr></thead>
+                    <tbody>
+            `;
+
+            let date = 1;
+            let firstDay = (firstDayOfMonth === 0) ? 6 : firstDayOfMonth - 1;
+
+            for (let i = 0; i < 6; i++) {
+                html += '<tr>';
+                for (let j = 0; j < 7; j++) {
+                    if (i === 0 && j < firstDay) {
+                        html += '<td></td>';
+                    } else if (date > daysInMonth) {
+                        html += '<td></td>';
+                    } else {
+                        const isToday = (date === day && m === today.getMonth() && y === today.getFullYear());
+                        const style = isToday ? `background: var(--win-accent); color: white; border-radius: 50%; font-weight: bold;` : ``;
+                        html += `<td style="padding: 8px; text-align: center;"><span style="${style}">${date}</span></td>`;
+                        date++;
+                    }
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            content.querySelector('#calendarDisplay').innerHTML = html;
+        }
+
+        renderCalendar(month, year);
+    }
+
+    // 🧮 Calculator
+    function openCalculator(){
+        const {content}=createWindow('Калькулятор',320,400,300,100);
+        content.style.padding = '15px';
+        content.innerHTML=`
+            <input type="text" id="calcDisplay" value="0" style="width:100%; height:50px; text-align:right; font-size:2em; margin-bottom:10px; padding: 0 10px; border: 1px solid #AAA;" readonly>
+            <div id="calcPad" style="display:grid; grid-template-columns: repeat(4, 1fr); gap: 8px;">
+                <button data-val="C" class="calc-btn">C</button><button data-val="/" data-type="operator" class="calc-btn">/</button><button data-val="*" data-type="operator" class="calc-btn">*</button><button data-val="<-" class="calc-btn">⌫</button>
+                <button data-val="7" class="calc-btn">7</button><button data-val="8" class="calc-btn">8</button><button data-val="9" class="calc-btn">9</button><button data-val="-" data-type="operator" class="calc-btn">-</button>
+                <button data-val="4" class="calc-btn">4</button><button data-val="5" class="calc-btn">5</button><button data-val="6" class="calc-btn">6</button><button data-val="+" data-type="operator" class="calc-btn">+</button>
+                <button data-val="1" class="calc-btn">1</button><button data-val="2" class="calc-btn">2</button><button data-val="3" class="calc-btn">3</button><button data-val="=" class="calc-btn accent-btn" style="grid-row: span 2;">=</button>
+                <button data-val="0" class="calc-btn" style="grid-column: span 2;">0</button><button data-val="." class="calc-btn">.</button>
+            </div>
+        `;
+        const display = content.querySelector('#calcDisplay');
+        let currentInput = '0';
+        let firstOperand = null;
+        let operator = null;
+        let waitingForSecondOperand = false;
+
+        function updateDisplay() {
+            display.value = currentInput;
+        }
+
+        function inputDigit(digit) {
+            if (waitingForSecondOperand) {
+                currentInput = digit;
+                waitingForSecondOperand = false;
+            } else {
+                currentInput = currentInput === '0' ? digit : currentInput + digit;
+            }
+            updateDisplay();
+        }
+
+        function inputDecimal(dot) {
+            if (waitingForSecondOperand) {
+                currentInput = '0' + dot;
+                waitingForSecondOperand = false;
+                updateDisplay();
+                return;
+            }
+            if (!currentInput.includes(dot)) {
+                currentInput += dot;
+            }
+            updateDisplay();
+        }
+
+        function handleOperator(nextOperator) {
+            const inputValue = parseFloat(currentInput);
+
+            if (operator && waitingForSecondOperand) {
+                operator = nextOperator;
+                return;
+            }
+
+            if (firstOperand === null) {
+                firstOperand = inputValue;
+            } else if (operator) {
+                const result = operate(firstOperand, inputValue, operator);
+                currentInput = String(result);
+                firstOperand = result;
+            }
+
+            waitingForSecondOperand = true;
+            operator = nextOperator;
+            updateDisplay();
+        }
+
+        function resetCalculator() {
+            currentInput = '0';
+            firstOperand = null;
+            operator = null;
+            waitingForSecondOperand = false;
+            updateDisplay();
+        }
+
+        function clearEntry() {
+            currentInput = currentInput.slice(0, -1) || '0';
+            updateDisplay();
+        }
+
+        function operate(first, second, op) {
+            if (op === '+') return first + second;
+            if (op === '-') return first - second;
+            if (op === '*') return first * second;
+            if (op === '/') {
+                if (second === 0) {
+                    alert('Ошибка: Деление на ноль');
+                    return 0;
+                }
+                // Ограничение точности для чистоты
+                return Math.round((first / second) * 10000) / 10000;
+            }
+            return second;
+        }
+
+        content.querySelector('#calcPad').addEventListener('click', (e) => {
+            const btn = e.target.closest('.calc-btn');
+            if (!btn) return;
+            const val = btn.dataset.val;
+
+            if (['+', '-', '*', '/'].includes(val)) {
+                handleOperator(val);
+            } else if (val === '=') {
+                handleOperator('=');
+                operator = null;
+            } else if (val === 'C') {
+                resetCalculator();
+            } else if (val === '<-') {
+                clearEntry();
+            } else if (val === '.') {
+                inputDecimal(val);
+            } else {
+                inputDigit(val);
+            }
+        });
+
+        // Initialize display
+        updateDisplay();
+    }
+
+
+    function openSpreadsheet(){
+        const {content}=createWindow('Таблицы',900,600,80,60);
+        content.style.padding = '0';
+        content.innerHTML=`
+            <div style='display:flex;gap:10px;padding:8px; border-bottom: 1px solid var(--win-border); flex-shrink: 0;'>
+                <input placeholder='A1' style='width: 60px; text-align: center;' readonly>
+                <input placeholder='Fx (Формула)' style='flex: 1;'>
+                <button class='accent-btn'>Сохранить</button>
+            </div>
+            <div id='spreadsheetGrid' style='overflow: auto; flex: 1;'>
+                <table style='width: 100%; border-collapse: collapse; min-width: 880px;'>
+                    <thead>
+                        <tr>
+                            <th style='width:30px; border: 1px solid #CCC; background: #EEE; color: black;'></th>
+                            ${'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map(l => `<th style='width:80px; border: 1px solid #CCC; background: #EEE; text-align: center; color: black;'>${l}</th>`).join('')}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${Array(20).fill(0).map((_, r) => `
+                            <tr>
+                                <td style='width:30px; border: 1px solid #CCC; background: #EEE; text-align: center; font-weight: bold; color: black;'>${r + 1}</td>
+                                ${Array(26).fill(0).map(() => `
+                                    <td style='border: 1px solid #CCC;'><input type='text' value='' style='width: 100%; border: none; padding: 4px; background: transparent;'></td>
+                                `).join('')}
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            <p style='padding: 5px 10px; margin: 0; font-size: 0.8em; color: #888;'>Это заглушка для приложения Таблицы. Ввод данных работает.</p>
+        `;
+    }
+
+    // 💡 About
+    function openAbout(){
+        const {content}=createWindow('О системе: Web Office OS',400,300,300,200);
+        content.innerHTML=`
+            <div style="text-align: center; padding: 20px;">
+                <h3 style="margin-top: 0; color: var(--win-accent);">Web Office OS</h3>
+                <p style="font-size: 1.2em; font-weight: bold;">Версия: 2.2.14:FN5</p>
+                <p>последние обновление:02:11:2025  </p>
+                <p style="margin-top: 20px; font-style: italic;">Разработчик: <span style="font-weight: bold;">K8</span></p>
+            </div>
+        `;
+    }
+
+    function openAppCreator(){
+        const {win, content} = createWindow('Добавить Приложение', 800, 600, 100, 100);
+        content.style.padding = '0';
+
+        let appNameValue = 'Мое Приложение';
+        let appIconValue = '🌟';
+        let appHtmlValue = `<p>Привет от нового приложения!</p>\n<button id="testBtn">Тест</button>`;
+        let appJsValue = `// 'content' - это DOM-элемент окна\n// 'win' - это элемент окна\ncontent.querySelector('#testBtn').onclick = () => {\n    alert('Кнопка работает!');\n};\n\n// Чтобы окно Змейки было правильного размера, используйте имя 'Змейка'.`;
+
+        // Предварительное заполнение кодом Змейки, если это первый запуск конструктора
+        const hasCustomApp = loadDynamicApps().length > 0;
+        if (!hasCustomApp) {
+             appNameValue = 'Змейка';
+             appIconValue = '🐍';
+             appHtmlValue = SNAKE_HTML;
+             appJsValue = SNAKE_JS.replace(/const win = content.closest\('.window'\);/g, '// const win доступен как аргумент функции-обертки.');
+        }
+
+        content.innerHTML = `
+            <div style="padding: 15px; background: var(--win-panel); border-bottom: 1px solid var(--win-border); flex-shrink: 0;">
+                <div style="display:flex; gap: 10px; margin-bottom: 10px; align-items: center;">
+                    <label>Имя: <input id='appName' value='${appNameValue}' style='width:150px'/></label>
+                    <label>Иконка: <input id='appIcon' value='${appIconValue}' style='width:50px'/></label>
+                    <button id='createAppBtn' class='accent-btn'>Создать и Запустить</button>
+                </div>
+            </div>
+            <div style="display:flex; height: 100%; flex: 1; overflow: hidden;">
+                <div style="flex: 1; padding: 10px; border-right: 1px solid var(--win-border); display: flex; flex-direction: column;">
+                    <h4 style="margin-top:0; flex-shrink: 0;">HTML (Содержимое окна)</h4>
+                    <textarea id='appHtml' style='width:100%; flex: 1; resize: none; font-family: monospace; white-space: pre;'>${appHtmlValue}</textarea>
+                </div>
+                <div style="flex: 1; padding: 10px; display: flex; flex-direction: column;">
+                    <h4 style="margin-top:0; flex-shrink: 0;">JavaScript (Функционал)</h4>
+                    <textarea id='appJs' style='width:100%; flex: 1; resize: none; font-family: monospace; white-space: pre;'>${appJsValue}</textarea>
+                </div>
+            </div>
+        `;
+
+        content.querySelector('#createAppBtn').onclick = () => {
+            const name = content.querySelector('#appName').value;
+            const icon = content.querySelector('#appIcon').value;
+            const html = content.querySelector('#appHtml').value;
+            const js = content.querySelector('#appJs').value;
+
+            addApp(name, icon, html, js);
+            win.remove();
+            alert(`Приложение "${name}" добавлено в меню "Пуск"!`);
+
+            // Запускаем только что созданное приложение
+            const app = getAppList().find(a => a.name === name);
+            if (app) app.fn();
+        };
+
+        // Логика для динамического изменения размеров окна
+        const appNameInput = content.querySelector('#appName');
+        appNameInput.addEventListener('input', () => {
+             const name = appNameInput.value.toLowerCase();
+             // Если имя похоже на "Змейка" - подсказываем
+             if (name.includes('змейка') || name.includes('snake')) {
+                 alert('Обнаружено имя "Змейка"! Приложение будет запущено в окне 420x500.');
+             }
+        });
+    }
+
+    // Clock
+    const clockEl=$('#desktopClock');
+    function updateClock(){clockEl.textContent=new Date().toLocaleTimeString('ru-RU', {hour: '2-digit', minute: '2-digit'})}
+    setInterval(updateClock,1000);updateClock();
+
+    // initialize
+    (async ()=>{ensureDemo();})();
+    </script>
+</body>
+</html>
